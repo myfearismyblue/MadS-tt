@@ -1,4 +1,3 @@
-import os
 from functools import lru_cache
 from pathlib import Path
 from typing import Dict
@@ -29,8 +28,17 @@ class PostgresSettings(BaseConfig):
         env_prefix = 'POSTGRES_'
 
 
+class WebAppSettings(BaseConfig):
+    HEALTHCHECK_PATH: str
+    PORT: int
+
+    class Config(BaseConfig.Config):
+        env_prefix = 'WEB_APP_'
+
+
 class ProjectSettings(BaseSettings):
     pg: PostgresSettings = PostgresSettings()
+    web_app: WebAppSettings = WebAppSettings()
     connection_config: Dict = {
         'driver': pg.DRIVER,
         'database': pg.DB,

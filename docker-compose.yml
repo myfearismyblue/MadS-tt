@@ -5,10 +5,9 @@ services:
     container_name: db_container
     restart: on-failure
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT}:${POSTGRES_PORT}"
     volumes:
       - ./db/.pgdata:/var/lib/postgresql/data/
-      - .:/app
     env_file: .env
     healthcheck:
       test: "echo 'SELECT 1' | PGPASSWORD=$POSTGRES_PASSWORD psql --host $$HOSTNAME --user $POSTGRES_USER $POSTGRES_DB"
@@ -37,7 +36,7 @@ services:
     build: .
     container_name: web_service_container
     ports:
-      - "8000:8000"
+      - "${WEB_APP_PORT}:${WEB_APP_PORT}"
     env_file: .env
     volumes:
       - ./src:/app/src
