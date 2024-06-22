@@ -1,3 +1,4 @@
 #!/bin/sh
-
-uvicorn --host 0.0.0.0 --port $APP_PORT --reload src.app:app
+cd /app/src
+alembic upgrade head
+uvicorn --host 0.0.0.0 --port $WEB_APP_PORT --reload src.app:app

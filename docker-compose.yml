@@ -45,7 +45,7 @@ services:
       - postgres
       - minio
     healthcheck:
-      test: "curl --fail http://localhost:8000$$HEALTHCHECK_PATH || exit 1"
+      test: "curl --fail http://localhost:$$WEB_APP_PORT/$$WEB_APP_HEALTHCHECK_PATH || exit 1"
       interval: 1m
       timeout: 10s
       retries: 3

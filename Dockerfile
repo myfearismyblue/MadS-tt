@@ -9,6 +9,5 @@ COPY ./start.sh /app/start.sh
 RUN chmod +x ./start.sh
 
 
-RUN adduser --disabled-password nobody
-USER nobody
+ENV PYTHONPATH "${PYTHONPATH}:/app"
 ENTRYPOINT ["sh", "./start.sh"]
