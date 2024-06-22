@@ -1,26 +1,24 @@
 from fastapi import FastAPI
-from fastapi_pagination import add_pagination, Page, paginate
+from fastapi.responses import ORJSONResponse
+from fastapi_pagination import add_pagination
 from starlette.responses import Response
 
 from src.config import get_settings
-from src.core import repositories, schemas
+from src.public.api.v1 import endpoints
 
-app = FastAPI()
-add_pagination(app)
+
 settings = get_settings()
-meme_repo = repositories.MemeRepository()
 
-@app.get(settings.web_app.HEALTHCHECK_PATH)
-async def get_health() -> Response:
+app = FastAPI(
+    title="MemesPublicAPI",
+    docs_url="/api/swagger-ui",
+    openapi_url="/api/openapi.json",
+    default_response_class=ORJSONResponse,
+)
+add_pagination(app)
+
+app.include_router(endpoints.router, prefix="/api/v1", tags=["memes"])
+
+@app.get(settings.web_app.HEALTHCHECK_PATH, include_in_schema=False)
+async def get_health():
     return Response(status_code=200)
-
-
-@app.get("/memes", response_model=Page[schemas.Meme])
-async def get_memes():
-    memes = await meme_repo.get_memes()
-    return paginate(memes)
-
-@app.get("/memes/{meme_id}")
-async def get_meme(meme_id: int) -> schemas.Meme:
-    data: dict = await meme_repo.get_meme_by_id(id=meme_id)
-    return schemas.Meme(**data)
