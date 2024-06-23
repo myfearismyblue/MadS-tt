@@ -86,6 +86,35 @@ class DBRepoBaseMixin(AbstractDBRepo):
         obj: models.Base = await self._create_obj(pd_obj)
         return self.schema.from_orm(obj) if as_pd else obj.__dict__
 
+    async def update_or_create(self, *,
+                               filter: dict,
+                               data: dict,
+                               partial=False,
+                               as_pd: bool = False) -> dict | BaseModel:
+        """
+        Созадет или обновляет объект, отфильтрованный по ключам и значениям словаря filter данными из data.
+        Если partial==False, то поля объекта будут обновлены значением None, если такие поля отсутствуют в data.
+        """
+        data: dict = self.filter_kwargs(data)
+        try:
+            obj: models.Base = await self._get_object_by(**filter)
+            _obj: models.Base = await self.session.merge(obj)  # локальная копия объекта, чтобы избежать конфликта сессий
+            # перебираем все ключи модели, если partial==false, иначе перебираем ключи из данных
+            for key in data if partial else self._model.__table__.columns.keys():
+                # если поле - primary, то его не обновляем
+                if getattr(getattr(self._model, key), 'primary_key'):
+                    continue
+                field, value = key, data[key]
+                setattr(_obj, field, value) if (value is not None or not partial) else None
+        except self.NothingFoundException:
+            _obj: models.Base = self._model(**data)
+            self.session.add(_obj)
+        await self.session.commit()
+        return self.schema.from_orm(_obj) if as_pd else _obj.__dict__
+
+    async def partial_update_or_create(self, *, filter: dict, data: dict, as_pd: bool = False) -> dict:
+        return await self.update_or_create(filter=filter, data=data, partial=True, as_pd=as_pd)
+
     class NothingFoundException(Exception):
         message = "Nothing found"
         ...
@@ -123,7 +152,8 @@ class MemeRepository(DBRepoBaseMixin, AbstractMemeDbRepo):
             await self.session.execute(stmt)
             await self.session.commit()
 
-    def _parse_name(self, url: str) -> str:
+    @staticmethod
+    def _parse_name(url: str) -> str:
         path = urlparse(url).path
         return path.split('/')[-1]
 
@@ -142,6 +172,7 @@ class MemeRepository(DBRepoBaseMixin, AbstractMemeDbRepo):
             return True
         except self.MultipleObjectsException:
             return False
+
 
 
     class DBConstrainException(Exception):
