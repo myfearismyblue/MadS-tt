@@ -3,6 +3,7 @@ import uuid
 
 import sqlalchemy as sa
 from fastapi import UploadFile
+from minio import error
 from pydantic import BaseModel
 from sqlalchemy import Select
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker, AsyncEngine
@@ -138,9 +139,19 @@ class FileService(AbstractFileRepo):
         url = self.client.get_presigned_url("GET", self.bucket, filename)
         return url
 
-    async def upload_file(self, file: UploadFile) -> str:
+    def _prevent_file_rewriting(self, filename: str) -> str:
+        try:
+            while self.client.stat_object(self.bucket, filename):
+                filename = f'{filename}{str(uuid.uuid4())}'
+        except error.S3Error:
+            pass
+        return filename
+
+    async def upload_file(self, file: UploadFile, prevent_rewriting: bool = True) -> str:
         data = await file.read()
         filename = getattr(file, 'filename') or f'file{str(uuid.uuid4())}'
+        if prevent_rewriting:
+            filename = self._prevent_file_rewriting(filename)
         content_type = getattr(file, 'content_type') or 'image/jpeg'
         return await self.create(data, filename, content_type)
 
