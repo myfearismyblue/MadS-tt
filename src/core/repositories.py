@@ -1,4 +1,8 @@
+import io
+import uuid
+
 import sqlalchemy as sa
+from fastapi import UploadFile
 from pydantic import BaseModel
 from sqlalchemy import Select
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker, AsyncEngine
@@ -56,7 +60,7 @@ class DBRepoBaseMixin(AbstractDBRepo):
     async def get_by(self, as_pd: bool = False, **kwargs) -> dict | BaseModel:
         """Возвращает объект как словарь или как объект Pydantic"""
         obj = await self._get_object_by(**kwargs)
-        return self.schema.from_attributes(obj) if as_pd else obj.__dict__
+        return self.schema.from_orm(obj) if as_pd else obj.__dict__
 
     def filter_kwargs(self, kwargs: dict) -> dict:
         """Выбрасывает kw, не являющиеся столбцами модели"""
@@ -78,7 +82,7 @@ class DBRepoBaseMixin(AbstractDBRepo):
     async def create(self, pd_obj: BaseModel, as_pd: bool = False) -> dict | BaseModel:
         """Создает объект в БД и возвращает его как словарь"""
         obj: models.Base = await self._create_obj(pd_obj)
-        return self.schema.from_attributes(obj) if as_pd else obj.__dict__
+        return self.schema.from_orm(obj) if as_pd else obj.__dict__
 
     class NothingFoundException(Exception):
         message = "Nothing found"
@@ -104,21 +108,17 @@ class MemeRepository(DBRepoBaseMixin, AbstractMemeDbRepo):
 
     class DBConstrainException(Exception):
         message = "Internal DB constraint"
-        ...
 
     class NothingFoundException(Exception):
         message = "No meme found"
-        ...
 
     class MultipleObjectsException(Exception):
         message = "Found more than one meme"
-        ...
 
 
 class FileService(AbstractFileRepo):
     client = minio_client
     bucket = settings.minio.STORAGE_BUCKET
-
 
     async def get_by(self, **kwargs):
         id_ = kwargs.get('id')
@@ -129,8 +129,26 @@ class FileService(AbstractFileRepo):
     async def get_file_by_id(self, id):
         return await self.get_by(id=id)
 
-    async def create(self, file):
-        return self.client.fput_object(self.bucket, 'test.jpg', file)
+    async def create(self, data: bytes, filename: str, content_type: str) -> str:
+        file_buffer = io.BytesIO(data)
+        file_buffer.seek(0)
+        length_ = file_buffer.getbuffer().nbytes
 
-    async def upload_file(self, file):
-        return await self.create(file)
+        self.client.put_object(self.bucket, filename, file_buffer, length=length_, content_type=content_type)
+        url = self.client.get_presigned_url("GET", self.bucket, filename)
+        return url
+
+    async def upload_file(self, file: UploadFile) -> str:
+        data = await file.read()
+        filename = getattr(file, 'filename') or f'file{str(uuid.uuid4())}'
+        content_type = getattr(file, 'content_type') or 'image/jpeg'
+        return await self.create(data, filename, content_type)
+
+    class DBConstrainException(Exception):
+        message = "Internal storage error"
+
+    class NothingFoundException(Exception):
+        message = "File not found"
+
+    class MultipleObjectsException(Exception):
+        message = "Found more than one file"
