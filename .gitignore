@@ -3,4 +3,4 @@
 /db/
 /.idea/
 */.pytest_cache/
-*/test.db
+/test.db
