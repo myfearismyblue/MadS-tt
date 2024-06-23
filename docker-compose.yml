@@ -15,8 +15,21 @@ services:
       timeout: 10s
       retries: 3
 
+  pgadmin:
+    container_name: pgadmin
+    image: dpage/pgadmin4:7.2
+    ports:
+      - "${PGADMIN_PORT}:80"
+    env_file: .env
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 1G
+
   minio:
-    image: minio/minio:latest
+    image: minio/minio:RELEASE.2024-06-22T05-26-45Z.fips
     container_name: s3_container
     command: server --console-address ":${MINIO_CONSOLE_PORT}" /data/
     ports:
