@@ -51,7 +51,7 @@ async def put_meme(meme_id: int,
 @router.delete("/memes/{meme_id}")
 async def delete_meme(meme_id: int, credentials: HTTPAuthorizationCredentials = Security(security)):
     """
-    Удаляет объект целиком, включая файл, если файл объекта используется, только в текущем меме.
+    Удаляет объект целиком, включая файл, если он используется, только в текущем меме.
     """
     authenticate_admin(credentials=credentials)
     try:

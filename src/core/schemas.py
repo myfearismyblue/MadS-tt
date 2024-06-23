@@ -4,6 +4,7 @@ from pydantic import BaseModel
 class MemeCreate(BaseModel):
     """Используется при создании мема пользователем"""
     title: str
+    content: str
 
 
 class MemeEnriched(MemeCreate):
