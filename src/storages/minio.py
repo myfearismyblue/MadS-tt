@@ -9,3 +9,6 @@ minio_client = Minio(endpoint=settings.minio.uri,
                      secret_key=settings.minio.ROOT_PASSWORD,
                      secure=settings.minio.SECURE)
 
+found = minio_client.bucket_exists(settings.minio.STORAGE_BUCKET)
+if not found:
+    minio_client.make_bucket(settings.minio.STORAGE_BUCKET)

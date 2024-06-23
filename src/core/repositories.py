@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sess
 from src.config import get_settings
 from src.core import schemas, models
 from src.core.abstracts import AbstractMemeDbRepo, AbstractDBRepo, AbstractFileRepo
-from src.storages import minio
+from src.storages.minio import minio_client
 
 settings = get_settings()
 
@@ -116,14 +116,9 @@ class MemeRepository(DBRepoBaseMixin, AbstractMemeDbRepo):
 
 
 class FileService(AbstractFileRepo):
-    client = minio.minio_client
+    client = minio_client
     bucket = settings.minio.STORAGE_BUCKET
-    found = client.bucket_exists(bucket)
-    if not found:
-        client.make_bucket(bucket)
-        print("Created bucket", bucket)
-    else:
-        print("Bucket", bucket, "already exists")
+
 
     async def get_by(self, **kwargs):
         id_ = kwargs.get('id')
