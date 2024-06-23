@@ -44,10 +44,7 @@ services:
     container_name: public_service
     ports:
       - "${WEB_APP_PORT}:${WEB_APP_PORT}"
-    command:
-      - /bin/sh
-      - -c
-      - /app/start.sh ${WEB_APP_PORT} src.public.app:app
+    command: /app/start.sh "${WEB_APP_PORT}" src.public.app:app
     healthcheck:
       test: "curl --fail http://localhost:$$WEB_APP_PORT/$$WEB_APP_HEALTHCHECK_PATH || exit 1"
       interval: 1m
@@ -59,10 +56,7 @@ services:
     container_name: private_service
     ports:
       - "${WEB_PRIVATE_APP_PORT}:${WEB_PRIVATE_APP_PORT}"
-    command:
-      - /bin/sh
-      - -c
-      - /app/start.sh ${WEB_PRIVATE_APP_PORT} src.private.app:app
+    command: /app/start.sh "${WEB_PRIVATE_APP_PORT}" src.private.app:app
     healthcheck:
       test: "curl --fail http://localhost:$$WEB_PRIVATE_APP_PORT/$$WEB_APP_HEALTHCHECK_PATH || exit 1"
       interval: 1m
