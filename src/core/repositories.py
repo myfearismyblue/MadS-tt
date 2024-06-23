@@ -130,14 +130,14 @@ class FileService(AbstractFileRepo):
     async def get_file_by_id(self, id):
         return await self.get_by(id=id)
 
-    async def create(self, data: bytes, filename: str, content_type: str) -> str:
+    async def create(self, data: bytes, filename: str, content_type: str) -> (str, str):
         file_buffer = io.BytesIO(data)
         file_buffer.seek(0)
         length_ = file_buffer.getbuffer().nbytes
 
-        self.client.put_object(self.bucket, filename, file_buffer, length=length_, content_type=content_type)
+        result = self.client.put_object(self.bucket, filename, file_buffer, length=length_, content_type=content_type)
         url = self.client.get_presigned_url("GET", self.bucket, filename)
-        return url
+        return url, result.etag
 
     def _prevent_file_rewriting(self, filename: str) -> str:
         try:
@@ -147,7 +147,7 @@ class FileService(AbstractFileRepo):
             pass
         return filename
 
-    async def upload_file(self, file: UploadFile, prevent_rewriting: bool = True) -> str:
+    async def upload_file(self, file: UploadFile, prevent_rewriting: bool = True) -> (str, str):
         data = await file.read()
         filename = getattr(file, 'filename') or f'file{str(uuid.uuid4())}'
         if prevent_rewriting:

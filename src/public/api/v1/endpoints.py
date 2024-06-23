@@ -31,8 +31,8 @@ async def get_meme(meme_id: int) -> schemas.Meme:
 @router.post("/memes/")
 async def post_meme(file: UploadFile, meme: schemas.MemeCreate = Depends()) -> schemas.Meme:
     try:
-        file_url: str = await file_service.upload_file(file=file)
-        meme = schemas.MemeEnriched(**meme.dict(), url=file_url)
+        file_url, etag = await file_service.upload_file(file=file)
+        meme = schemas.MemeEnriched(**meme.dict(), url=file_url, etag=etag)
         return await meme_repo.create(meme, as_pd=True)
     except meme_repo.DBConstrainException as _e:
         raise HTTPException(status_code=500, detail=_e.message)

@@ -7,6 +7,7 @@ class MemeCreate(BaseModel):
 
 class MemeEnriched(MemeCreate):
     url: str
+    etag: str
 
 
 class Meme(MemeEnriched):
