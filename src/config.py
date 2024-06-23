@@ -43,8 +43,6 @@ class MinioSettings(BaseConfig):
     ROOT_USER: str
     ROOT_PASSWORD: str
     STORAGE_BUCKET: str
-    ACCESS_KEY: str
-    SECRET_KEY: str
     SECURE: bool
 
     @property
