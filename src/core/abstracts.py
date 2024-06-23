@@ -39,6 +39,10 @@ class AbstractMemeDbRepo(AbstractDBRepo):
         """Возвращает мем по его id"""
 
     @abstractmethod
+    def delete_meme_by_id(self, id: int):
+        """Удаляет мем по его id"""
+
+    @abstractmethod
     def get_memes(self, as_qs: bool = False):
         """Возвращает мем по его id"""
 

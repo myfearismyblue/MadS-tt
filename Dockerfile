@@ -8,6 +8,4 @@ COPY ./src /app/src
 COPY ./start.sh /app/start.sh
 RUN chmod +x /app/start.sh
 
-
 ENV PYTHONPATH "${PYTHONPATH}:/app"
-ENTRYPOINT ["sh", "/app/start.sh"]

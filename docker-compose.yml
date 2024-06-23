@@ -32,19 +32,39 @@ services:
       timeout: 20s
       retries: 3
 
-  fastapi:
+
+  public-service: &public-service
     build: .
-    container_name: web_service_container
-    ports:
-      - "${WEB_APP_PORT}:${WEB_APP_PORT}"
     env_file: .env
     volumes:
       - ./src:/app/src
     depends_on:
       - postgres
       - minio
+    container_name: public_service
+    ports:
+      - "${WEB_APP_PORT}:${WEB_APP_PORT}"
+    command:
+      - /bin/sh
+      - -c
+      - /app/start.sh ${WEB_APP_PORT} src.public.app:app
     healthcheck:
       test: "curl --fail http://localhost:$$WEB_APP_PORT/$$WEB_APP_HEALTHCHECK_PATH || exit 1"
+      interval: 1m
+      timeout: 10s
+      retries: 3
+
+  private-service:
+    <<: *public-service
+    container_name: private_service
+    ports:
+      - "${WEB_PRIVATE_APP_PORT}:${WEB_PRIVATE_APP_PORT}"
+    command:
+      - /bin/sh
+      - -c
+      - /app/start.sh ${WEB_PRIVATE_APP_PORT} src.private.app:app
+    healthcheck:
+      test: "curl --fail http://localhost:$$WEB_PRIVATE_APP_PORT/$$WEB_APP_HEALTHCHECK_PATH || exit 1"
       interval: 1m
       timeout: 10s
       retries: 3

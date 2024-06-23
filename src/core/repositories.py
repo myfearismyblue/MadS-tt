@@ -5,7 +5,7 @@ import sqlalchemy as sa
 from fastapi import UploadFile
 from minio import error
 from pydantic import BaseModel
-from sqlalchemy import Select
+from sqlalchemy import Select, delete
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker, AsyncEngine
 
 from src.config import get_settings
@@ -31,14 +31,14 @@ class DBRepoBaseMixin(AbstractDBRepo):
 
     async def _get_object_by(self, **kwargs) -> models.Base:
         """Возвращает объект sqlalchemy по любым аттрибутам модели"""
-        qs = sa.select(self._model)
+        stmt = sa.select(self._model)
         kwargs = self.filter_kwargs(kwargs)
         for field_name in kwargs:
             model_field = getattr(self._model, field_name)
-            qs = qs.where(model_field == kwargs[field_name])
+            stmt = stmt.where(model_field == kwargs[field_name])
         try:
             async with self.session:
-                results = await self.session.scalars(qs)
+                results = await self.session.scalars(stmt)
             obj: models.Base = results.one()
         except sa.exc.NoResultFound as _exc:
             raise self.NothingFoundException from _exc
@@ -46,14 +46,14 @@ class DBRepoBaseMixin(AbstractDBRepo):
             raise self.MultipleObjectsException from _exc
         return obj
 
-    async def _get_objects(self, as_qs: bool = False) -> list[models.Base]:
+    async def _get_objects(self, as_stmt: bool = False) -> list[models.Base]:
         """Возвращает список объектов с заданной позиции и количеством"""
-        qs = sa.select(self._model)
-        if as_qs:
-            return qs
+        stmt = sa.select(self._model)
+        if as_stmt:
+            return stmt
         try:
             async with self.session:
-                results = await self.session.scalars(qs)  # noqa
+                results = await self.session.scalars(stmt)  # noqa
         except sa.exc.NoResultFound as _exc:
             return list()
         return list(results)
@@ -95,17 +95,32 @@ class DBRepoBaseMixin(AbstractDBRepo):
 
 
 class MemeRepository(DBRepoBaseMixin, AbstractMemeDbRepo):
+    """Репозиторий для работы с мемами. Синглтон, инстанцируется только в один экземпляр."""
     schema = schemas.Meme
     _model = models.Meme
+
+    _self = None
+
+    def __new__(cls, *args, **kwargs):
+        if cls._self:
+            return cls._self
+        cls._self = super().__new__(cls, *args, **kwargs)
+        return cls._self
 
     async def get_meme_by_id(self, id: int) -> schemas.Meme:
         return await self.get_by(id=id, as_pd=True)
 
-    async def get_memes(self, as_qs: bool = False, **kwargs) -> list[dict] | Select:
-        return await self._get_objects(as_qs=as_qs)
+    async def get_memes(self, as_stmt: bool = False, **kwargs) -> list[dict] | Select:
+        return await self._get_objects(as_stmt=as_stmt)
 
     async def create_meme(self, meme: schemas.MemeCreate) -> dict:
         return await self.create(meme)
+
+    async def delete_meme_by_id(self, id: int):
+        async with self.session:
+            stmt = sa.delete(self._model).where(self._model.id == id)
+            await self.session.execute(stmt)
+            await self.session.commit()
 
     class DBConstrainException(Exception):
         message = "Internal DB constraint"
@@ -118,8 +133,17 @@ class MemeRepository(DBRepoBaseMixin, AbstractMemeDbRepo):
 
 
 class FileService(AbstractFileRepo):
+    """Репозиторий для работы с файлами. Синглтон, инстанцируется только в один экземпляр."""
     client = minio_client
     bucket = settings.minio.STORAGE_BUCKET
+
+    _self = None
+
+    def __new__(cls, *args, **kwargs):
+        if cls._self:
+            return cls._self
+        cls._self = super().__new__(cls, *args, **kwargs)
+        return cls._self
 
     async def get_by(self, **kwargs):
         id_ = kwargs.get('id')
