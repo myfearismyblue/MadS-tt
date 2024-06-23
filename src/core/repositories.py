@@ -18,11 +18,11 @@ settings = get_settings()
 
 
 class DBRepoBaseMixin(AbstractDBRepo):
-    def __init__(self, connection_config: dict = None, pool_size: int = None, max_overflow: int = None):
+    """Основное неспецифичное поведение репоизтория, работующего с БД"""
+    def __init__(self, pool_size: int = None, max_overflow: int = None):
         """
         Прокидывает информацию для подключения к БД
         """
-        self._cfg = connection_config
 
         self._engine: AsyncEngine = create_async_engine(settings.pg.uri,
                                                         pool_size=pool_size or 5,
@@ -98,7 +98,8 @@ class DBRepoBaseMixin(AbstractDBRepo):
         data: dict = self.filter_kwargs(data)
         try:
             obj: models.Base = await self._get_object_by(**filter)
-            _obj: models.Base = await self.session.merge(obj)  # локальная копия объекта, чтобы избежать конфликта сессий
+            _obj: models.Base = await self.session.merge(
+                obj)  # локальная копия объекта, чтобы избежать конфликта сессий
             # перебираем все ключи модели, если partial==false, иначе перебираем ключи из данных
             for key in data if partial else self._model.__table__.columns.keys():
                 # если поле - primary, то его не обновляем
@@ -173,8 +174,6 @@ class MemeRepository(DBRepoBaseMixin, AbstractMemeDbRepo):
         except self.MultipleObjectsException:
             return False
 
-
-
     class DBConstrainException(Exception):
         message = "Internal DB constraint"
 
@@ -248,9 +247,6 @@ class FileService(AbstractFileRepo):
             return self.client.stat_object(self.bucket, name).etag
         except error.S3Error:
             raise self.NothingFoundException
-
-    # async def _delete_file_by_etag(self, etag: str) -> None:
-    #     self.client
 
     class DBConstrainException(Exception):
         message = "Internal storage error"
