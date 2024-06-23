@@ -26,6 +26,11 @@ file_service = repositories.FileService()
 @router.delete("/memes/{meme_id}")
 async def delete_meme(meme_id: int):
     try:
+        name: str = await meme_repo.get_meme_file_name(id=meme_id)
+        etag: str = await meme_repo.get_etag(id=meme_id)
+        file_not_shared: bool = await meme_repo.is_etag_unique(etag=etag)
+        if file_not_shared:
+            await file_service.delete_file_by_name(name=name)
         await meme_repo.delete_meme_by_id(id=meme_id)
         return Response(status_code=200)
 

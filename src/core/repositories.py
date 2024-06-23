@@ -1,5 +1,6 @@
 import io
 import uuid
+from urllib.parse import urlparse
 
 import sqlalchemy as sa
 from fastapi import UploadFile
@@ -122,6 +123,27 @@ class MemeRepository(DBRepoBaseMixin, AbstractMemeDbRepo):
             await self.session.execute(stmt)
             await self.session.commit()
 
+    def _parse_name(self, url: str) -> str:
+        path = urlparse(url).path
+        return path.split('/')[-1]
+
+    async def get_meme_file_name(self, id: int) -> str:
+        obj = await self.get_by(id=id, as_pd=True)
+        name: str = self._parse_name(obj.url)
+        return name
+
+    async def get_etag(self, id: int) -> str:
+        obj: schemas.Meme = await self.get_by(id=id, as_pd=True)
+        return obj.etag
+
+    async def is_etag_unique(self, etag: str) -> bool:
+        try:
+            await self._get_object_by(etag=etag)
+            return True
+        except self.MultipleObjectsException:
+            return False
+
+
     class DBConstrainException(Exception):
         message = "Internal DB constraint"
 
@@ -164,6 +186,11 @@ class FileService(AbstractFileRepo):
         return url, result.etag
 
     def _prevent_file_rewriting(self, filename: str) -> str:
+        """
+        Возвращает новое название файла, если файл с таким названием уже существует.
+        Если перезаписывать файл другим содержанием и таким же названием,
+        то все ссылки старые ссылки будут вести на файл с новым содержанием.
+        """
         try:
             while self.client.stat_object(self.bucket, filename):
                 filename = f'{filename}{str(uuid.uuid4())}'
@@ -178,6 +205,21 @@ class FileService(AbstractFileRepo):
             filename = self._prevent_file_rewriting(filename)
         content_type = getattr(file, 'content_type') or 'image/jpeg'
         return await self.create(data, filename, content_type)
+
+    async def delete_file_by_name(self, name: str) -> None:
+        try:
+            return self.client.remove_object(self.bucket, name)
+        except error.S3Error:
+            raise self.NothingFoundException
+
+    async def get_etag_by_name(self, name: str) -> str:
+        try:
+            return self.client.stat_object(self.bucket, name).etag
+        except error.S3Error:
+            raise self.NothingFoundException
+
+    # async def _delete_file_by_etag(self, etag: str) -> None:
+    #     self.client
 
     class DBConstrainException(Exception):
         message = "Internal storage error"
