@@ -1,23 +1,39 @@
-from fastapi import APIRouter, HTTPException, Depends, UploadFile
+from fastapi import APIRouter, HTTPException, Depends, UploadFile, Security
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from starlette import status
 from starlette.responses import Response
 
 from src.config import get_settings
 from src.core import repositories, schemas
 
 router = APIRouter()
+security = HTTPBearer()
 settings = get_settings()
 meme_repo = repositories.MemeRepository()
 file_service = repositories.FileService()
 
 
+def authenticate_admin(credentials: HTTPAuthorizationCredentials = Security(security)):
+    if not credentials.credentials == settings.web_private.API_KEY:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+
 @router.put("/memes/{meme_id}")
-async def put_meme(meme_id: int, file: UploadFile, meme: schemas.MemeCreate = Depends()) -> schemas.Meme:
+async def put_meme(meme_id: int,
+                   file: UploadFile,
+                   meme: schemas.MemeCreate = Depends(),
+                   credentials: HTTPAuthorizationCredentials = Security(security)) -> schemas.Meme:
     """
     Заменяет объект целиком, включая файл.
     Если файл объекта используется, только в текущем меме, то удаляет старый файл.
     """
-    try:
+    authenticate_admin(credentials=credentials)
 
+    try:
         etag: str = await meme_repo.get_etag(id=meme_id)
         file_not_shared: bool = await meme_repo.is_etag_unique(etag=etag)
         if file_not_shared:
@@ -33,10 +49,11 @@ async def put_meme(meme_id: int, file: UploadFile, meme: schemas.MemeCreate = De
 
 
 @router.delete("/memes/{meme_id}")
-async def delete_meme(meme_id: int):
+async def delete_meme(meme_id: int, credentials: HTTPAuthorizationCredentials = Security(security)):
     """
     Удаляет объект целиком, включая файл, если файл объекта используется, только в текущем меме.
     """
+    authenticate_admin(credentials=credentials)
     try:
         etag: str = await meme_repo.get_etag(id=meme_id)
         file_not_shared: bool = await meme_repo.is_etag_unique(etag=etag)

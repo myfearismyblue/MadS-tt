@@ -36,6 +36,13 @@ class WebAppSettings(BaseConfig):
         env_prefix = 'WEB_APP_'
 
 
+class WebPrivateAppSettings(BaseConfig):
+    API_KEY: str
+
+    class Config(BaseConfig.Config):
+        env_prefix = 'WEB_PRIVATE_APP_'
+
+
 class MinioSettings(BaseConfig):
     HOST: str
     PORT: int
@@ -56,6 +63,7 @@ class MinioSettings(BaseConfig):
 class ProjectSettings(BaseSettings):
     pg: PostgresSettings = PostgresSettings()
     web_app: WebAppSettings = WebAppSettings()
+    web_private: WebPrivateAppSettings = WebPrivateAppSettings()
     minio: MinioSettings = MinioSettings()
     connection_config: Dict = {
         'driver': pg.DRIVER,
