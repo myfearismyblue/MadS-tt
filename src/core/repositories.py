@@ -56,7 +56,7 @@ class DBRepoBaseMixin(AbstractDBRepo):
     async def get_by(self, as_pd: bool = False, **kwargs) -> dict | BaseModel:
         """Возвращает объект как словарь или как объект Pydantic"""
         obj = await self._get_object_by(**kwargs)
-        return self.schema.from_orm(obj) if as_pd else obj.__dict__
+        return self.schema.from_attributes(obj) if as_pd else obj.__dict__
 
     def filter_kwargs(self, kwargs: dict) -> dict:
         """Выбрасывает kw, не являющиеся столбцами модели"""
@@ -78,7 +78,7 @@ class DBRepoBaseMixin(AbstractDBRepo):
     async def create(self, pd_obj: BaseModel, as_pd: bool = False) -> dict | BaseModel:
         """Создает объект в БД и возвращает его как словарь"""
         obj: models.Base = await self._create_obj(pd_obj)
-        return self.schema.from_orm(obj) if as_pd else obj.__dict__
+        return self.schema.from_attributes(obj) if as_pd else obj.__dict__
 
     class NothingFoundException(Exception):
         message = "Nothing found"
