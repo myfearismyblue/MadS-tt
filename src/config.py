@@ -36,9 +36,29 @@ class WebAppSettings(BaseConfig):
         env_prefix = 'WEB_APP_'
 
 
+class MinioSettings(BaseConfig):
+    HOST: str
+    PORT: int
+    CONSOLE_PORT: int
+    ROOT_USER: str
+    ROOT_PASSWORD: str
+    STORAGE_BUCKET: str
+    ACCESS_KEY: str
+    SECRET_KEY: str
+    SECURE: bool
+
+    @property
+    def uri(self):
+        return f'{self.HOST}:{self.PORT}'
+
+    class Config(BaseConfig.Config):
+        env_prefix = 'MINIO_'
+
+
 class ProjectSettings(BaseSettings):
     pg: PostgresSettings = PostgresSettings()
     web_app: WebAppSettings = WebAppSettings()
+    minio: MinioSettings = MinioSettings()
     connection_config: Dict = {
         'driver': pg.DRIVER,
         'database': pg.DB,

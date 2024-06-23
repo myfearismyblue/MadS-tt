@@ -1,4 +1,6 @@
-from fastapi import APIRouter, HTTPException
+from typing import Annotated
+
+from fastapi import APIRouter, HTTPException, File, Depends
 from fastapi_pagination import Page
 from fastapi_pagination.ext.async_sqlalchemy import paginate
 from sqlalchemy import Select
@@ -26,8 +28,10 @@ async def get_meme(meme_id: int) -> schemas.Meme:
 
 
 @router.post("/memes/")
-async def post_meme(meme: schemas.MemeCreate) -> schemas.Meme:
+async def post_meme(file: Annotated[bytes, File()], meme: schemas.MemeCreate = Depends()) -> schemas.Meme:
     try:
+        file_url = repositories.FileService.upload_file(file=file)
+        meme = schemas.MemeEnriched(**meme.dict(), url=file_url)
         return await meme_repo.create(meme, as_pd=True)
     except meme_repo.DBConstrainException as _e:
         raise HTTPException(status_code=500, detail=_e.message)

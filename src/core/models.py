@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String
 
-from src.db.postgres import Base
+from src.storages.postgres import Base
 
 
 class Meme(Base):

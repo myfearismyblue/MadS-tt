@@ -11,3 +11,4 @@ sqlalchemy~=2.0.31          # https://docs.sqlalchemy.org/en/20/
 alembic~=1.13.1             # https://alembic.sqlalchemy.org/en/latest/
 pydantic~=2.7.4             # https://docs.pydantic.dev/latest/
 pydantic-settings~=2.0.2    # https://pypi.org/project/pydantic-settings/
+minio~=7.2.7                # https://pypi.org/project/minio/
