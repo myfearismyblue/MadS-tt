@@ -29,6 +29,10 @@ class AbstractMemeDbRepo(AbstractRepo):
     def get_meme_by_id(self, id: int):
         """Возвращает мем по его id"""
     @abstractmethod
+    def get_memes(self, as_qs: bool = False):
+        """Возвращает мем по его id"""
+
+    @abstractmethod
     class DBConstrainException:
         """Поднимается, когда запись в БД невозможна по причинам, зависящим от БД"""
 

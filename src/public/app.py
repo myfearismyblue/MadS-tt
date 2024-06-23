@@ -1,5 +1,4 @@
 from fastapi import FastAPI
-from fastapi.responses import ORJSONResponse
 from fastapi_pagination import add_pagination
 from starlette.responses import Response
 
@@ -12,8 +11,7 @@ settings = get_settings()
 app = FastAPI(
     title="MemesPublicAPI",
     docs_url="/api/swagger-ui",
-    openapi_url="/api/openapi.json",
-    default_response_class=ORJSONResponse,
+    openapi_url="/api/openapi.json"
 )
 add_pagination(app)
 

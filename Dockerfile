@@ -6,8 +6,8 @@ COPY ./requirements.txt /app
 RUN pip install --no-cache-dir --upgrade -r requirements.txt
 COPY ./src /app/src
 COPY ./start.sh /app/start.sh
-RUN chmod +x ./start.sh
+RUN chmod +x /app/start.sh
 
 
 ENV PYTHONPATH "${PYTHONPATH}:/app"
-ENTRYPOINT ["sh", "./start.sh"]
+ENTRYPOINT ["sh", "/app/start.sh"]

@@ -1,5 +1,6 @@
 import sqlalchemy as sa
 from pydantic import BaseModel
+from sqlalchemy import Select
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker, AsyncEngine
 from sqlalchemy.orm import sessionmaker
 
@@ -21,7 +22,7 @@ class DBRepoBaseMixin(AbstractRepo):
                                                         pool_size=pool_size or 5,
                                                         max_overflow=max_overflow or 10,
                                                         echo=True)
-        self._session: AsyncSession = async_sessionmaker(self._engine, class_=AsyncSession, expire_on_commit=False)()
+        self.session: AsyncSession = async_sessionmaker(self._engine, class_=AsyncSession, expire_on_commit=False)()
 
     async def _get_object_by(self, **kwargs) -> models.Base:
         """Возвращает объект sqlalchemy по любым аттрибутам модели"""
@@ -31,8 +32,8 @@ class DBRepoBaseMixin(AbstractRepo):
             model_field = getattr(self._model, field_name)
             qs = qs.where(model_field == kwargs[field_name])
         try:
-            async with self._session:
-                results = await self._session.scalars(qs)
+            async with self.session:
+                results = await self.session.scalars(qs)
             obj: models.Base = results.one()
         except sa.exc.NoResultFound as _exc:
             raise self.NothingFoundException from _exc
@@ -40,12 +41,14 @@ class DBRepoBaseMixin(AbstractRepo):
             raise self.MultipleObjectsException from _exc
         return obj
 
-    async def _get_objects(self, skip: int = 0, limit: int = 10) -> list[models.Base]:
+    async def _get_objects(self, as_qs: bool = False) -> list[models.Base]:
         """Возвращает список объектов с заданной позиции и количеством"""
-        qs = sa.select(self._model).offset(skip).limit(limit)
+        qs = sa.select(self._model)     #.offset(skip).limit(limit)
+        if as_qs:
+            return qs
         try:
-            async with self._session:
-                results = await self._session.scalars(qs)   # noqa
+            async with self.session:
+                results = await self.session.scalars(qs)   # noqa
         except sa.exc.NoResultFound as _exc:
             return list()
         return list(results)
@@ -68,10 +71,10 @@ class DBRepoBaseMixin(AbstractRepo):
     async def _create_obj(self, pd_obj: BaseModel) -> models.Base:
         """Создает объект в БД"""
         obj = self._model(**{**pd_obj.dict(), 'id': None})
-        async with self._session:
-            self._session.add(obj)
-            await self._session.commit()
-            await self._session.refresh(obj)
+        async with self.session:
+            self.session.add(obj)
+            await self.session.commit()
+            await self.session.refresh(obj)
         return obj
 
     async def create(self, pd_obj: BaseModel) -> dict:
@@ -92,8 +95,8 @@ class MemeRepository(DBRepoBaseMixin, AbstractMemeDbRepo):
 
     async def get_meme_by_id(self, id: int) -> dict:
         return await self.get_by(id=id)
-    async def get_memes(self, skip: int = 0, limit: int = 10) -> list[dict]:
-        return await self._get_objects(skip=skip, limit=limit)
+    async def get_memes(self, as_qs: bool = False, **kwargs) -> list[dict] | Select:
+        return await self._get_objects(as_qs=as_qs)
 
     async def create_meme(self, meme: schemas.MemeCreate) -> dict:
         return await self.create(meme)

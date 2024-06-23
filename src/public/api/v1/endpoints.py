@@ -1,5 +1,7 @@
 from fastapi import APIRouter
-from fastapi_pagination import Page, paginate
+from fastapi_pagination import Page
+from fastapi_pagination.ext.async_sqlalchemy import paginate
+from sqlalchemy import Select
 
 from src.config import get_settings
 from src.core import repositories, schemas
@@ -11,8 +13,8 @@ meme_repo = repositories.MemeRepository()
 
 @router.get("/memes", response_model=Page[schemas.Meme])
 async def get_memes():
-    memes = await meme_repo.get_memes()
-    return paginate(memes)
+    memes_qs: Select = await meme_repo.get_memes(as_qs=True)
+    return await paginate(meme_repo.session, memes_qs)
 
 
 @router.get("/memes/{meme_id}")
