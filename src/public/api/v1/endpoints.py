@@ -19,5 +19,9 @@ async def get_memes():
 
 @router.get("/memes/{meme_id}")
 async def get_meme(meme_id: int) -> schemas.Meme:
-    data: dict = await meme_repo.get_meme_by_id(id=meme_id)
-    return schemas.Meme(**data)
+    return await meme_repo.get_meme_by_id(id=meme_id)
+
+
+@router.post("/memes/")
+async def post_meme(meme: schemas.MemeCreate) -> schemas.Meme:
+    return await meme_repo.create(meme)

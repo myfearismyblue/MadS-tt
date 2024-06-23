@@ -2,7 +2,6 @@ import sqlalchemy as sa
 from pydantic import BaseModel
 from sqlalchemy import Select
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker, AsyncEngine
-from sqlalchemy.orm import sessionmaker
 
 from src.config import get_settings
 from src.core import schemas, models
@@ -43,22 +42,20 @@ class DBRepoBaseMixin(AbstractRepo):
 
     async def _get_objects(self, as_qs: bool = False) -> list[models.Base]:
         """Возвращает список объектов с заданной позиции и количеством"""
-        qs = sa.select(self._model)     #.offset(skip).limit(limit)
+        qs = sa.select(self._model)
         if as_qs:
             return qs
         try:
             async with self.session:
-                results = await self.session.scalars(qs)   # noqa
+                results = await self.session.scalars(qs)  # noqa
         except sa.exc.NoResultFound as _exc:
             return list()
         return list(results)
 
-
-    async def get_by(self, **kwargs) -> dict:
-        """Возвращает объект как словарь"""
+    async def get_by(self, as_pd: bool = False, **kwargs) -> dict | BaseModel:
+        """Возвращает объект как словарь или как объект Pydantic"""
         obj = await self._get_object_by(**kwargs)
-        return obj.__dict__
-
+        return self.schema.from_orm(obj) if as_pd else obj.__dict__
 
     def filter_kwargs(self, kwargs: dict) -> dict:
         """Выбрасывает kw, не являющиеся столбцами модели"""
@@ -77,10 +74,10 @@ class DBRepoBaseMixin(AbstractRepo):
             await self.session.refresh(obj)
         return obj
 
-    async def create(self, pd_obj: BaseModel) -> dict:
+    async def create(self, pd_obj: BaseModel, as_pd: bool = False) -> dict | BaseModel:
         """Создает объект в БД и возвращает его как словарь"""
         obj: models.Base = await self._create_obj(pd_obj)
-        return obj.__dict__
+        return self.schema.from_orm(obj) if as_pd else obj.__dict__
 
     class NothingFoundException(Exception):
         ...
@@ -93,8 +90,9 @@ class MemeRepository(DBRepoBaseMixin, AbstractMemeDbRepo):
     schema = schemas.Meme
     _model = models.Meme
 
-    async def get_meme_by_id(self, id: int) -> dict:
-        return await self.get_by(id=id)
+    async def get_meme_by_id(self, id: int) -> schemas.Meme:
+        return await self.get_by(id=id, as_pd=True)
+
     async def get_memes(self, as_qs: bool = False, **kwargs) -> list[dict] | Select:
         return await self._get_objects(as_qs=as_qs)
 
@@ -103,4 +101,3 @@ class MemeRepository(DBRepoBaseMixin, AbstractMemeDbRepo):
 
     class DBConstrainException(Exception):
         ...
-

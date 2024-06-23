@@ -35,4 +35,3 @@ class AbstractMemeDbRepo(AbstractRepo):
     @abstractmethod
     class DBConstrainException:
         """Поднимается, когда запись в БД невозможна по причинам, зависящим от БД"""
-
