@@ -2,3 +2,5 @@
 /.env
 /db/
 /.idea/
+*/.pytest_cache/
+*/test.db

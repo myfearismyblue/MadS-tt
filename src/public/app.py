@@ -12,9 +12,9 @@ app = FastAPI(
     docs_url="/api/swagger-ui",
     openapi_url="/api/openapi.json"
 )
-add_pagination(app)
 
 app.include_router(endpoints.router, prefix="/api/v1", tags=["memes"])
+add_pagination(app)
 
 
 @app.get(settings.web_app.HEALTHCHECK_PATH, include_in_schema=False)
