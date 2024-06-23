@@ -1,4 +1,4 @@
-# Загрузка и обработка файлов
+# Загрузка мемов
 ![Python >= 3.10](https://img.shields.io/pypi/pyversions/django?style=plastic)
 ![PostgreSQL == 14](https://img.shields.io/static/v1?label=PostgreSQL&message=14&color=darkblue&style=plastic)
 ![pydantic == 2.7.4](https://img.shields.io/static/v1?label=pydantic&message=2.7.4&color=red&style=plastic)

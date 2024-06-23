@@ -6,7 +6,6 @@ python-multipart~=0.0.9     # https://pypi.org/project/python-multipart/
 uvicorn~=0.29.0             # https://www.uvicorn.org/
 requests~=2.31.0            # https://pypi.org/project/requests/
 asgiref~=3.8.1              # https://pypi.org/project/asgiref/
-python-decouple~=3.8        # https://pypi.org/project/python-decouple/
 sqlalchemy~=2.0.31          # https://docs.sqlalchemy.org/en/20/
 alembic~=1.13.1             # https://alembic.sqlalchemy.org/en/latest/
 pydantic~=2.7.4             # https://docs.pydantic.dev/latest/
