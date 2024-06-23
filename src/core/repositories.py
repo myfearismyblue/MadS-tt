@@ -80,9 +80,11 @@ class DBRepoBaseMixin(AbstractRepo):
         return self.schema.from_orm(obj) if as_pd else obj.__dict__
 
     class NothingFoundException(Exception):
+        message = "Nothing found"
         ...
 
     class MultipleObjectsException(Exception):
+        message = "Found more than one object"
         ...
 
 
@@ -100,4 +102,13 @@ class MemeRepository(DBRepoBaseMixin, AbstractMemeDbRepo):
         return await self.create(meme)
 
     class DBConstrainException(Exception):
+        message = "Internal DB constraint"
+        ...
+
+    class NothingFoundException(Exception):
+        message = "No meme found"
+        ...
+
+    class MultipleObjectsException(Exception):
+        message = "Found more than one meme"
         ...
